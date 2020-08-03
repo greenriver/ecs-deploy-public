@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 # When we have new instances, they aren't known to ECS correctly
 # until we run this. It happens on deployments, so deploying one

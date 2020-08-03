@@ -12,16 +12,18 @@ class Deployer
   attr_accessor :repo_name
   attr_accessor :registry_id
 
-  [
-    File.realpath(File.join(__dir__, '..',  '..', '..')),
-    File.realpath(File.join(__dir__, '..',  '..', '..', '..')),
-  ].each do |path|
-    if File.exists?(File.join(path, 'Gemfile'))
-      ROOT_PATH =  path
-    end
-  end
+  #[
+  #  File.realpath(File.join(__dir__, '..')),
+  #  #File.realpath(File.join(__dir__, '..',  '..', '..')),
+  #  #File.realpath(File.join(__dir__, '..',  '..', '..', '..')),
+  #].each do |path|
+  #  if File.exists?(File.join(path, 'Gemfile'))
+  #    ROOT_PATH = path
+  #  end
+  #end
+  ROOT_PATH = File.realpath(File.join(__dir__, '..')),
 
-  ASSETS_PATH = File.join(__dir__, '..',  '..', 'docker_assets')
+  ASSETS_PATH = File.join(__dir__, '..', '..', 'docker_assets')
   AWS_PROFILE = ENV.fetch('AWS_PROFILE')
   TEST_HOST   = 'test-host.dev.test'
   TEST_PORT   = 9999
@@ -73,7 +75,7 @@ class Deployer
     self.registry_id       = registry_id
     self.repo_name         = repo_name
     self.variant           = 'web'
-    self.system_status_path =  system_status_path
+    self.system_status_path = system_status_path
 
     Dir.chdir(_root)
   end
@@ -131,17 +133,17 @@ class Deployer
   def roll_out
     @roll_out ||=
       RollOut.new({
-        dj_options: dj_options,
-        image_base: _remote_tag_base,
-        secrets_arn: secrets_arn,
-        target_group_arn: _target_group_arn,
-        target_group_name: target_group_name,
-        execution_role: execution_role,
-        fqdn: fqdn,
-        task_role: task_role,
-        web_options: web_options,
-        system_status_path: system_status_path,
-      })
+                    dj_options: dj_options,
+                    image_base: _remote_tag_base,
+                    secrets_arn: secrets_arn,
+                    target_group_arn: _target_group_arn,
+                    target_group_name: target_group_name,
+                    execution_role: execution_role,
+                    fqdn: fqdn,
+                    task_role: task_role,
+                    web_options: web_options,
+                    system_status_path: system_status_path,
+                  })
   end
 
   def _ensure_clean_repo!
@@ -160,7 +162,7 @@ class Deployer
     remote = `git ls-remote origin | grep #{branch}`.chomp
     our_commit = `git rev-parse #{branch}`.chomp
 
-    if ! remote.start_with?(our_commit)
+    if !remote.start_with?(our_commit)
       raise "Push or pull your branch first!"
     end
   end
@@ -276,7 +278,7 @@ class Deployer
   end
 
   def debug?
-    ENV['DEBUG']=='true'
+    ENV['DEBUG'] == 'true'
   end
 
   def _push_image!
@@ -336,7 +338,7 @@ class Deployer
 
   def _run(c, alt_msg: nil)
     cmd = c.gsub(/\n/, ' ').squeeze(' ')
-    puts "Running #{alt_msg||cmd}"
+    puts "Running #{alt_msg || cmd}"
 
     system(cmd)
 

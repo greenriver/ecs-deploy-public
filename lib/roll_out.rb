@@ -58,7 +58,7 @@ class RollOut
     end
 
     # Comment this out if you want to bypass checking on deploy task completion
-    if _get_status == {} && !ENV['FIRST']=='true'
+    if _get_status == {} && !ENV['FIRST'] == 'true'
       puts "Status uri #{self.status_uri} isn't correct"
       exit
     end
@@ -72,14 +72,14 @@ class RollOut
     end
 
     deployed_at = Date.today.to_s
-    deployed_by = ENV['USER']||'unknown'
+    deployed_by = ENV['USER'] || 'unknown'
 
     # when the deploy tasks complete, it updates a redis key
     # with this value. We can then ping the app to see when this happens at
     # system_status/details.
     self.deployment_id = [
       deployed_at,
-      deployed_by[0,3], # A little anonymity
+      deployed_by[0, 3], # A little anonymity
       File.read("#{Deployer::ASSETS_PATH}/REVISION").chomp,
       SecureRandom.hex(6),
     ].join('::')
@@ -159,7 +159,7 @@ class RollOut
       soft_mem_limit_mb: DEFAULT_SOFT_DJ_RAM_MB.call(target_group_name),
       image: image_base + '--base',
       name: name,
-      #command: ['echo', 'workerhere'],
+      # command: ['echo', 'workerhere'],
     )
   end
 
@@ -190,7 +190,6 @@ class RollOut
     ec2.describe_instances.each do |set|
       set.reservations.each do |reservation|
         reservation.instances.each do |instance|
-
           # find its matching ECS container instance
           container_instance = container_instances.find do |ci|
             ci.ec2_instance_id == instance.instance_id
@@ -206,16 +205,16 @@ class RollOut
 
           # Finally, upsert the attribute
           resp = ecs.put_attributes({
-            cluster: cluster,
-            attributes: [
-              {
-                name: "instance-lifecycle",
-                value: spotness,
-                target_type: "container-instance",
-                target_id: container_instance.container_instance_arn
-              },
-            ],
-          })
+                                      cluster: cluster,
+                                      attributes: [
+                                        {
+                                          name: "instance-lifecycle",
+                                          value: spotness,
+                                          target_type: "container-instance",
+                                          target_id: container_instance.container_instance_arn
+                                        },
+                                      ],
+                                    })
         end
       end
     end
@@ -273,14 +272,14 @@ class RollOut
     _start_service!(
       name: name,
       load_balancers: lb,
-      desired_count: web_options['container_count']||1,
+      desired_count: web_options['container_count'] || 1,
       minimum_healthy_percent: minimum,
       maximum_percent: maximum,
     )
   end
 
   def deploy_dj!(dj_options)
-    name  = target_group_name + "-dj-#{dj_options['name']}"
+    name = target_group_name + "-dj-#{dj_options['name']}"
 
     environment = default_environment.dup
 
@@ -303,7 +302,7 @@ class RollOut
 
     _start_service!(
       name: name,
-      desired_count: dj_options['container_count']||1,
+      desired_count: dj_options['container_count'] || 1,
       maximum_percent: maximum,
       minimum_healthy_percent: minimum,
     )
@@ -312,16 +311,16 @@ class RollOut
   private
 
   def _get_min_max_from_desired(container_count)
-    desired_count = container_count||1
+    desired_count = container_count || 1
 
     if desired_count == 0
-      return [0,0]
+      return [0, 0]
     elsif desired_count == 1
       [100, 200]
     else
       chunk_size = (100 / desired_count) + 1
 
-      [chunk_size, 100 + chunk_size*2]
+      [chunk_size, 100 + chunk_size * 2]
     end
   end
 
@@ -350,8 +349,8 @@ class RollOut
     memory_multiplier = RAM_OVERCOMMIT_MULTIPLIER.call(target_group_name)
 
     self.log_prefix = name.split(/ecs/).last.sub(/^-/, '') +
-      '/' +
-      Time.now.strftime("%Y-%m-%d:%H-%M%Z").gsub(/:/, '_')
+                      '/' +
+                      Time.now.strftime("%Y-%m-%d:%H-%M%Z").gsub(/:/, '_')
 
     # This is just reverse-engineering what ECS is doing.
     # I'm not sure if there's a way to simplify the stream name
@@ -367,7 +366,7 @@ class RollOut
       cpu: cpu_shares,
 
       # Hard limit
-      memory: ( soft_mem_limit_mb * memory_multiplier ).to_i,
+      memory: (soft_mem_limit_mb * memory_multiplier).to_i,
 
       # Soft limit
       memory_reservation: soft_mem_limit_mb,
@@ -418,7 +417,7 @@ class RollOut
     end
 
     task_definition_payload = {
-      container_definitions: [ container_definition ],
+      container_definitions: [container_definition],
 
       family: name,
 
@@ -480,16 +479,16 @@ class RollOut
       exit
     end
 
-    puts "[INFO] Task arn: #{task_arn||'unknown'}"
+    puts "[INFO] Task arn: #{task_arn || 'unknown'}"
     puts "[INFO] Debug with: aws ecs describe-tasks --cluster #{cluster} --tasks #{task_arn}"
 
     puts '[INFO] Waiting on the task to start and finish quickly to catch resource-related errors'
     begin
-      ecs.wait_until(:tasks_running, {cluster: cluster, tasks: [task_arn]}, {max_attempts: 5, delay: 5})
+      ecs.wait_until(:tasks_running, { cluster: cluster, tasks: [task_arn] }, { max_attempts: 5, delay: 5 })
     rescue Aws::Waiters::Errors::TooManyAttemptsError
     end
     begin
-      ecs.wait_until(:tasks_stopped, {cluster: cluster, tasks: [task_arn]}, {max_attempts: 2, delay: 5})
+      ecs.wait_until(:tasks_stopped, { cluster: cluster, tasks: [task_arn] }, { max_attempts: 2, delay: 5 })
     rescue Aws::Waiters::Errors::TooManyAttemptsError
     end
 
@@ -559,15 +558,15 @@ class RollOut
 
   # If you can construct or query for the log stream name, you can use this to
   # tail any tasks, even those that are part of a service.
-  def _tail_logs(start_time=Time.now)
+  def _tail_logs(start_time = Time.now)
     self.last_task_completed = false
     begin
       resp = cwl.get_log_events({
-        log_group_name: target_group_name,
-        log_stream_name: log_stream_name,
-        start_time: start_time.utc.to_i,
-        start_from_head: false,
-      })
+                                  log_group_name: target_group_name,
+                                  log_stream_name: log_stream_name,
+                                  start_time: start_time.utc.to_i,
+                                  start_from_head: false,
+                                })
     rescue Aws::CloudWatchLogs::Errors::ResourceNotFoundException
       puts "[FATAL] The log stream #{log_stream_name} does not exist. At least not yet."
       return
@@ -577,18 +576,18 @@ class RollOut
 
     get_log_events = ->(next_token) do
       cwl.get_log_events({
-        log_group_name: target_group_name,
-        log_stream_name: log_stream_name,
-        next_token: next_token,
-        start_from_head: true,
-      })
+                           log_group_name: target_group_name,
+                           log_stream_name: log_stream_name,
+                           next_token: next_token,
+                           start_from_head: true,
+                         })
     end
 
     too_soon = -> do
-      (Time.now.utc.to_i - start_time.utc.to_i) < 60*5
+      (Time.now.utc.to_i - start_time.utc.to_i) < 60 * 5
     end
 
-    while ( resp.events.length > 0 || too_soon.call )
+    while (resp.events.length > 0 || too_soon.call)
       resp.events.each do |event|
         puts "[TASK] #{event.message}"
         if event.message.match?(/---DONE---/)
@@ -605,8 +604,8 @@ class RollOut
 
   def _start_service!(load_balancers: [], desired_count: 1, name:, maximum_percent: 100, minimum_healthy_percent: 0)
     services = ecs.list_services({
-      cluster: cluster,
-    })
+                                   cluster: cluster,
+                                 })
 
     # services result is paginated. The first any iterates over each page
     service_exists = services.any? do |results|
@@ -639,7 +638,7 @@ class RollOut
         service: name,
         desired_count: desired_count,
         task_definition: task_definition,
-        #placement_constraints: placement_constraints,
+        # placement_constraints: placement_constraints,
         placement_strategy: placement_strategy,
         deployment_configuration: {
           maximum_percent: maximum_percent,
@@ -664,7 +663,7 @@ class RollOut
           minimum_healthy_percent: minimum_healthy_percent,
         },
         launch_type: 'EC2',
-        #placement_constraints: placement_constraints,
+        # placement_constraints: placement_constraints,
         placement_strategy: placement_strategy,
         load_balancers: load_balancers,
       }

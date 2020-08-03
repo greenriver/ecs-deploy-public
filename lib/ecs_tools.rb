@@ -11,12 +11,12 @@ class EcsTools
     containers = `ssh #{HOST} "docker ps -a -n 10"`
 
     container_id = \
-      containers.
-        split(/\n/).
-        grep(/#{IMAGE}/).
-        first.
-        split(/\s/).
-        first
+      containers
+      .split(/\n/)
+      .grep(/#{IMAGE}/)
+      .first
+      .split(/\s/)
+      .first
 
     puts "Using container #{container_id} for a shell"
 
@@ -71,7 +71,7 @@ class EcsTools
       services.each do |service|
         deployments = service.deployments
 
-        finished_deployment = finished.call(service) #deployments.length == 1 && deployments[0].status == 'PRIMARY' && deployments[0].desired_count == deployments[0].running_count
+        finished_deployment = finished.call(service) # deployments.length == 1 && deployments[0].status == 'PRIMARY' && deployments[0].desired_count == deployments[0].running_count
 
         next if failures && finished_deployment
 
@@ -99,7 +99,7 @@ class EcsTools
           #   debugger
           # end
 
-          header =  ['', '', '']
+          header = ['', '', '']
         end
         puts '-' * 147
 
@@ -127,7 +127,7 @@ class EcsTools
           cluster: cluster,
           container_instance: ci,
         )
-        #puts results.ai
+        # puts results.ai
         puts "Scheduled update for agent on #{ci}. Only doing this one so we don't restart all the agents at once."
         exit
       rescue Aws::ECS::Errors::NoUpdateAvailableException
@@ -140,16 +140,16 @@ class EcsTools
   # installing packages, gems, and precompiling assets.
   def clear_cache!(repo_name)
     _run("docker image rm #{repo_name}:latest--pre-cache")
-    #_run("docker image rm #{repo_url}:latest--pre-cache")
+    # _run("docker image rm #{repo_url}:latest--pre-cache")
 
     result = ecr.batch_delete_image({
-      image_ids: [
-        {
-          image_tag: "latest--pre-cache",
-        },
-      ],
-      repository_name: repo_name,
-    })
+                                      image_ids: [
+                                        {
+                                          image_tag: "latest--pre-cache",
+                                        },
+                                      ],
+                                      repository_name: repo_name,
+                                    })
 
     puts result.to_h.ai
   end
@@ -167,6 +167,6 @@ class EcsTools
     end
   end
 
-  define_method(:ecs) { Aws::ECS::Client.new(profile: ENV.fetch('AWS_PROFILE') ) }
-  define_method(:ecr) { Aws::ECR::Client.new(profile: ENV.fetch('AWS_PROFILE') ) }
+  define_method(:ecs) { Aws::ECS::Client.new(profile: ENV.fetch('AWS_PROFILE')) }
+  define_method(:ecr) { Aws::ECR::Client.new(profile: ENV.fetch('AWS_PROFILE')) }
 end

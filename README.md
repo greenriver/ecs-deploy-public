@@ -8,7 +8,7 @@ Generic resources to script ECS deployments.
 
   * Add this repository as a git submodule, usually at `config/deploy`
 
-    git submodule add -b production git@github.com:greenriver/ecs-deploy-public.git config/deploy
+    git submodule add -b production git@github.com:greenriver/ecs-deploy-public.git .ecs-deploy
     git submodule init
 
   * Make a folder called config/docker_assets
@@ -17,37 +17,43 @@ Generic resources to script ECS deployments.
     mkdir -p config/docker_assets
     ```
 
-  * Symlink workflow directory
+  * copy workflow directory
 
     ```
     mkdir -p .github/workflows
 
-    cp config/deploy/.github/workflows/ecs.yml .github/workflows/ecs.yml
+    cp .ecs-deploy/.github/workflows/ecs.yml .github/workflows/ecs.yml
     ```
+
+  * Symlink in config for rememberable access
+
+    ```
+    cd config
+    ln -s ../.ecs-deploy deploy
 
   * Symlink binaries
 
     ```
     cd bin
-    ln -s ../config/deploy/bin/bootstrap_databases .
-    ln -s ../config/deploy/bin/clear_cache
-    ln -s ../config/deploy/bin/deploy
-    ln -s ../config/deploy/bin/list
-    ln -s ../config/deploy/bin/list_domains
-    ln -s ../config/deploy/bin/mark_spot_instances
-    ln -s ../config/deploy/bin/migrate
-    ln -s ../config/deploy/bin/only_web_deploy
-    ln -s ../config/deploy/bin/poll_state
-    ln -s ../config/deploy/bin/cssh
-    ln -s ../config/deploy/bin/tail_logs
-    ln -s ../config/deploy/bin/test_build
-    ln -s ../config/deploy/bin/update_agents
+    ln -s ../.ecs-deploy/bin/bootstrap_databases .
+    ln -s ../.ecs-deploy/bin/clear_cache
+    ln -s ../.ecs-deploy/bin/deploy
+    ln -s ../.ecs-deploy/bin/list
+    ln -s ../.ecs-deploy/bin/list_domains
+    ln -s ../.ecs-deploy/bin/mark_spot_instances
+    ln -s ../.ecs-deploy/bin/migrate
+    ln -s ../.ecs-deploy/bin/only_web_deploy
+    ln -s ../.ecs-deploy/bin/poll_state
+    ln -s ../.ecs-deploy/bin/cssh
+    ln -s ../.ecs-deploy/bin/tail_logs
+    ln -s ../.ecs-deploy/bin/test_build
+    ln -s ../.ecs-deploy/bin/update_agents
     ```
 
 
   * If you want the latest...
     ```
-    cd config/deploy
+    cd .ecs-deploy
     git pull
     ```
 
@@ -56,6 +62,5 @@ Generic resources to script ECS deployments.
 
   ```
   git submodule deinit --all
-  rm -rf .git/modules/ecs-deploy
-  git rm -f config/deploy
+  git rm -f .ecs-deploy
   ```

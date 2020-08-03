@@ -1,0 +1,201 @@
+AllCops:
+  Exclude:
+    - db/schema.rb
+    - db/migrate/*
+    - app/assets/**/*
+    - node_modules/**/*
+    - lib/tasks/seed.rake
+    - lib/guard/bundler_audit.rb
+    - bin/*
+    - vendor/**/*
+
+# We don't care about method length, since we check method cyclomatic
+# complexity.
+Metrics/MethodLength:
+  Enabled: false
+Metrics/ClassLength:
+  Enabled: false
+Metrics/AbcSize:
+  # The ABC size is a calculated magnitude, so this number can be a Fixnum or
+  # a Float.
+  Max: 175
+Metrics/CyclomaticComplexity:
+  Max: 50
+  #Exclude:
+  #  - 'lib/something.rb'
+Metrics/PerceivedComplexity:
+  Max: 50
+Layout/LineLength:
+  Max: 200
+
+# Trailing commas make for clearer diffs because the last line won't appear
+# to have been changed, as it would if it lacked a comma and had one added.
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: comma
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma
+
+# Cop supports --auto-correct.
+# Configuration parameters: PreferredDelimiters.
+Style/PercentLiteralDelimiters:
+  PreferredDelimiters:
+    # Using `[]` for string arrays instead of `()`, since normal arrays are
+    # indicated with `[]` not `()`.
+    '%w': '[]'
+    '%W': '[]'
+
+Style/IfUnlessModifier:
+  Enabled: false
+
+Style/AndOr:
+  Enabled: true
+
+Style/ClassAndModuleChildren:
+  Enabled: true
+  Exclude:
+    - app/graphql/**/*
+
+Style/GuardClause:
+  Enabled: false
+
+Naming/PredicateName:
+  Exclude:
+    - app/models/field_normalizer/*
+
+Style/NumericPredicate:
+  Enabled: false
+
+Style/ConditionalAssignment:
+  Enabled: false
+
+Style/FormatStringToken:
+  Enabled: false
+
+Metrics/BlockLength:
+  Enabled: false
+
+Style/RescueStandardError:
+  Enabled: true
+
+Style/StringLiterals:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/CommentedKeyword:
+  Enabled: false
+
+Naming/VariableNumber:
+  Enabled: false
+
+Style/MixinUsage:
+  Enabled: false
+
+Layout/FirstHashElementIndentation:
+  Enabled: false
+
+Layout/DotPosition:
+  EnforcedStyle: trailing
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+Style/Documentation:
+  Enabled: false
+
+Style/MultilineBlockChain:
+  Enabled: false
+
+Layout/SpaceInsideArrayLiteralBrackets:
+  Enabled: false
+
+Layout/SpaceInsideHashLiteralBraces:
+  Enabled: false
+
+Layout/EndAlignment:
+  EnforcedStyleAlignWith: start_of_line
+
+Lint/SuppressedException:
+  Enabled: true
+
+Lint/RescueException:
+  Enabled: false
+
+Layout/SpaceAfterNot:
+  Enabled: false
+
+Layout/MultilineOperationIndentation:
+  Enabled: false
+
+Style/AccessModifierDeclarations:
+  Enabled: false
+
+Metrics/ModuleLength:
+  Enabled: false
+
+Layout/ParameterAlignment:
+  EnforcedStyle: with_fixed_indentation
+  IndentationWidth: 2
+
+Metrics/ParameterLists:
+  Max: 8
+
+Style/RegexpLiteral:
+  EnforcedStyle: slashes
+
+Lint/UnusedMethodArgument:
+  Enabled: true
+
+Style/DoubleNegation:
+  Enabled: false
+
+Style/WordArray:
+  EnforcedStyle: brackets
+
+Style/SymbolArray:
+  EnforcedStyle: brackets
+
+Style/HashEachMethods:
+  Enabled: true
+
+Style/HashTransformKeys:
+  Enabled: true
+
+Style/HashTransformValues:
+  Enabled: true
+
+Layout/CaseIndentation:
+  EnforcedStyle: end
+
+Layout/RescueEnsureAlignment:
+  Enabled: false
+
+Style/EmptyMethod:
+  EnforcedStyle: expanded
+
+Layout/SpaceInsideRangeLiteral:
+  Enabled: false
+
+Style/Lambda:
+  Enabled: false
+
+Style/AsciiComments:
+  Enabled: false
+
+Style/OneLineConditional:
+  Enabled: false
+
+# Layout/SpaceAroundMethodCallOperator:
+#   Enabled: false
+
+# Lint/RaiseException:
+#   Enabled: false
+
+# Lint/StructNewOverride:
+#   Enabled: false
+
+# Style/ExponentialNotation:
+#   Enabled: false

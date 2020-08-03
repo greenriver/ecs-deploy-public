@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 # This triggers a task that sets up all the schemas in all the databases along
 # with seeding.
