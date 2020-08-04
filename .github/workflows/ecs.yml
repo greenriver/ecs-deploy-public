@@ -64,7 +64,8 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-        DOCKER_ASSETS_PATH: ${{ secrets.DOCKER_ASSETS_PATH }}
+        #DOCKER_ASSETS_PATH: ${{ secrets.DOCKER_ASSETS_PATH }}
+        DOCKER_ASSETS_PATH: config/docker_assets
         SHA: ${{ github.sha }}
       run: |
         export IMAGE_TAG=${SHA::9}
