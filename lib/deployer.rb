@@ -12,18 +12,9 @@ class Deployer
   attr_accessor :repo_name
   attr_accessor :registry_id
 
-  #[
-  #  File.realpath(File.join(__dir__, '..')),
-  #  #File.realpath(File.join(__dir__, '..',  '..', '..')),
-  #  #File.realpath(File.join(__dir__, '..',  '..', '..', '..')),
-  #].each do |path|
-  #  if File.exists?(File.join(path, 'Gemfile'))
-  #    ROOT_PATH = path
-  #  end
-  #end
   ROOT_PATH = File.realpath(File.join(__dir__, '..')),
 
-  ASSETS_PATH = File.join(__dir__, '..', '..', 'docker_assets')
+  ASSETS_PATH = File.join(__dir__, '..', 'config', 'docker_assets')
   AWS_PROFILE = ENV.fetch('AWS_PROFILE')
   TEST_HOST   = 'test-host.dev.test'
   TEST_PORT   = 9999
