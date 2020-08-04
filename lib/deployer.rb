@@ -12,9 +12,8 @@ class Deployer
   attr_accessor :repo_name
   attr_accessor :registry_id
 
-  ROOT_PATH = File.realpath(File.join(__dir__, '..'))
-
-  ASSETS_PATH = File.join(__dir__, '..', 'config', 'docker_assets')
+  ROOT_PATH   = File.realpath(File.join(__dir__, '..', '..'))
+  ASSETS_PATH = File.join(ROOT_PATH, 'config', 'docker_assets')
   AWS_PROFILE = ENV.fetch('AWS_PROFILE')
   TEST_HOST   = 'test-host.dev.test'
   TEST_PORT   = 9999
