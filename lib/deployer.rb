@@ -12,7 +12,7 @@ class Deployer
   attr_accessor :repo_name
   attr_accessor :registry_id
 
-  ROOT_PATH = File.realpath(File.join(__dir__, '..')),
+  ROOT_PATH = File.realpath(File.join(__dir__, '..'))
 
   ASSETS_PATH = File.join(__dir__, '..', 'config', 'docker_assets')
   AWS_PROFILE = ENV.fetch('AWS_PROFILE')
