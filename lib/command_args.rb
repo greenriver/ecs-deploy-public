@@ -5,7 +5,7 @@ class CommandArgs
   attr_accessor :deployments
 
   def initialize
-    path = Pathname.new(__FILE__).join('..', '..', '..', 'config', 'docker_assets', 'secret.deploy.values.yml')
+    path = File.join(Deployer::ROOT_PATH, 'config', 'docker_assets', 'secret.deploy.values.yml')
     config = YAML.load_file(path)
     defaults = config['_global_defaults'] || {}
     config.each_key do |key|
