@@ -123,17 +123,17 @@ class Deployer
   def roll_out
     @roll_out ||=
       RollOut.new({
-                    dj_options: dj_options,
-                    image_base: _remote_tag_base,
-                    secrets_arn: secrets_arn,
-                    target_group_arn: _target_group_arn,
-                    target_group_name: target_group_name,
-                    execution_role: execution_role,
-                    fqdn: fqdn,
-                    task_role: task_role,
-                    web_options: web_options,
-                    system_status_path: system_status_path,
-                  })
+        dj_options: dj_options,
+        image_base: _remote_tag_base,
+        secrets_arn: secrets_arn,
+        target_group_arn: _target_group_arn,
+        target_group_name: target_group_name,
+        execution_role: execution_role,
+        fqdn: fqdn,
+        task_role: task_role,
+        web_options: web_options,
+        system_status_path: system_status_path,
+      })
   end
 
   def _ensure_clean_repo!
@@ -152,7 +152,7 @@ class Deployer
     remote = `git ls-remote origin | grep #{branch}`.chomp
     our_commit = `git rev-parse #{branch}`.chomp
 
-    if !remote.start_with?(our_commit)
+    if ! remote.start_with?(our_commit)
       raise "Push or pull your branch first!"
     end
   end
@@ -173,6 +173,7 @@ class Deployer
     _build_and_push_image('base')
     _build_and_push_image('web')
     _build_and_push_image('dj')
+    #_build_and_push_image('cron')
   end
 
   def _build_and_push_image(variant)

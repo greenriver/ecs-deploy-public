@@ -33,6 +33,8 @@ class RollOut
 
   DEFAULT_SOFT_DJ_RAM_MB = ->(target_group_name) { target_group_name.match?(/staging/) ? 1500 : 4000 }
 
+  DEFAULT_SOFT_RAM_MB = 1800
+
   RAM_OVERCOMMIT_MULTIPLIER = ->(target_group_name) { target_group_name.match?(/staging/) ? 5 : 3 }
 
   DEFAULT_CPU_SHARES = 256
@@ -58,7 +60,7 @@ class RollOut
     end
 
     # Comment this out if you want to bypass checking on deploy task completion
-    if _get_status == {} && !ENV['FIRST'] == 'true'
+    if _get_status == {} && ! ENV['FIRST'] == 'true'
       puts "Status uri #{self.status_uri} isn't correct"
       exit
     end
@@ -126,7 +128,7 @@ class RollOut
     name = target_group_name + '-bootstrap-dbs'
 
     _register_task!(
-      soft_mem_limit_mb: web_soft_mem_limit_mb,
+      soft_mem_limit_mb: DEFAULT_SOFT_RAM_MB,
       image: image_base + '--dj',
       name: name,
       command: ['bin/db_prep']
@@ -139,7 +141,7 @@ class RollOut
     name = target_group_name + '-deploy-tasks'
 
     _register_task!(
-      soft_mem_limit_mb: web_soft_mem_limit_mb,
+      soft_mem_limit_mb: DEFAULT_SOFT_RAM_MB,
       image: image_base + '--base',
       name: name,
       command: ['bin/deploy_tasks.sh'],
@@ -190,6 +192,7 @@ class RollOut
     ec2.describe_instances.each do |set|
       set.reservations.each do |reservation|
         reservation.instances.each do |instance|
+
           # find its matching ECS container instance
           container_instance = container_instances.find do |ci|
             ci.ec2_instance_id == instance.instance_id
@@ -205,16 +208,16 @@ class RollOut
 
           # Finally, upsert the attribute
           resp = ecs.put_attributes({
-                                      cluster: cluster,
-                                      attributes: [
-                                        {
-                                          name: "instance-lifecycle",
-                                          value: spotness,
-                                          target_type: "container-instance",
-                                          target_id: container_instance.container_instance_arn
-                                        },
-                                      ],
-                                    })
+            cluster: cluster,
+            attributes: [
+              {
+                name: "instance-lifecycle",
+                value: spotness,
+                target_type: "container-instance",
+                target_id: container_instance.container_instance_arn
+              },
+            ],
+          })
         end
       end
     end
@@ -240,6 +243,8 @@ class RollOut
     _make_cloudwatch_group!
 
     name = target_group_name + '-web'
+
+    soft_mem_limit_mb = (web_options['soft_mem_limit_mb'] || DEFAULT_SOFT_WEB_RAM_MB).to_i
 
     environment = default_environment.dup
 
@@ -349,8 +354,8 @@ class RollOut
     memory_multiplier = RAM_OVERCOMMIT_MULTIPLIER.call(target_group_name)
 
     self.log_prefix = name.split(/ecs/).last.sub(/^-/, '') +
-                      '/' +
-                      Time.now.strftime("%Y-%m-%d:%H-%M%Z").gsub(/:/, '_')
+      '/' +
+      Time.now.strftime("%Y-%m-%d:%H-%M%Z").gsub(/:/, '_')
 
     # This is just reverse-engineering what ECS is doing.
     # I'm not sure if there's a way to simplify the stream name
@@ -537,7 +542,7 @@ class RollOut
         puts "[WARN] We expected: #{self.deployment_id}"
         puts "[WARN] We got: #{response.dig('registered_deployment_id')}"
         puts "[WARN] You can safely (p)roceed if this is the first deployment"
-        print "\nYou can (w)ait, (p)roceed with deployment anyway, or (a)bort: "
+        print "\nYou can (w)ait, (p)roceed with deployment anyway, (v)iew log tail, or (a)bort: "
         response = STDIN.gets
         if response.downcase.match(/w/)
           puts "[INFO] Waiting 30 seconds"
@@ -548,6 +553,15 @@ class RollOut
         elsif response.downcase.match(/a/)
           puts "[WARN] exiting"
           exit
+        elsif response.downcase.match(/v/)
+          resp = cwl.get_log_events({
+            log_group_name: target_group_name,
+            log_stream_name: log_stream_name,
+            start_from_head: true,
+          })
+          resp.events.each do |event|
+            puts "[TASK] #{event.message}"
+          end
         else
           puts "[INFO] Waiting 30 seconds since we didn't understand your response"
           sleep 30
@@ -562,11 +576,11 @@ class RollOut
     self.last_task_completed = false
     begin
       resp = cwl.get_log_events({
-                                  log_group_name: target_group_name,
-                                  log_stream_name: log_stream_name,
-                                  start_time: start_time.utc.to_i,
-                                  start_from_head: false,
-                                })
+        log_group_name: target_group_name,
+        log_stream_name: log_stream_name,
+        start_time: start_time.utc.to_i,
+        start_from_head: false,
+      })
     rescue Aws::CloudWatchLogs::Errors::ResourceNotFoundException
       puts "[FATAL] The log stream #{log_stream_name} does not exist. At least not yet."
       return
@@ -576,11 +590,11 @@ class RollOut
 
     get_log_events = ->(next_token) do
       cwl.get_log_events({
-                           log_group_name: target_group_name,
-                           log_stream_name: log_stream_name,
-                           next_token: next_token,
-                           start_from_head: true,
-                         })
+        log_group_name: target_group_name,
+        log_stream_name: log_stream_name,
+        next_token: next_token,
+        start_from_head: true,
+      })
     end
 
     too_soon = -> do
@@ -593,6 +607,8 @@ class RollOut
         if event.message.match?(/---DONE---/)
           self.last_task_completed = true
           return
+        elsif event.message.match?(/rake aborted|an error has occurred/i)
+          return
         end
       end
 
@@ -604,8 +620,8 @@ class RollOut
 
   def _start_service!(load_balancers: [], desired_count: 1, name:, maximum_percent: 100, minimum_healthy_percent: 0)
     services = ecs.list_services({
-                                   cluster: cluster,
-                                 })
+      cluster: cluster,
+    })
 
     # services result is paginated. The first any iterates over each page
     service_exists = services.any? do |results|
