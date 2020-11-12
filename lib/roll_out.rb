@@ -31,7 +31,13 @@ class RollOut
 
   DEFAULT_SOFT_WEB_RAM_MB = 1800
 
-  DEFAULT_SOFT_DJ_RAM_MB = ->(target_group_name) { target_group_name.match?(/staging/) ? 1500 : 4000 }
+  DEFAULT_SOFT_DJ_RAM_MB = ->(target_group_name) do
+    if target_group_name.match?(/hnmi/)
+      1500
+    else
+      target_group_name.match?(/staging/) ? 1500 : 4000
+    end
+  end
 
   DEFAULT_SOFT_RAM_MB = 1800
 
