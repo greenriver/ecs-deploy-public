@@ -68,7 +68,8 @@ jobs:
         DOCKER_ASSETS_PATH: config/docker_assets
         SHA: ${{ github.sha }}
       run: |
-        export IMAGE_TAG=${SHA::9}
+        export IMAGE_TAG="githash-${SHA::9}"
+        export RUBY_VERSION=`cat .ruby-version`
 
         echo $SHA > REVISION
         echo 'no tag generated' > image-tag.txt
@@ -77,14 +78,14 @@ jobs:
         then
           # Pull the image that speeds up builds. Build it if we have to.
           # Delete from ECR to re-cache
-          echo pulling or building pre-cache image
-          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest--pre-cache || docker build --file=$DOCKER_ASSETS_PATH/Dockerfile.${ECR_REPOSITORY}.pre-cache -t $ECR_REGISTRY/$ECR_REPOSITORY:latest--pre-cache .
-          echo pushing pre-cache
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest--pre-cache
+          echo Pulling or building pre-cache image
+          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:${RUBY_VERSION}--pre-cache || docker build --file=$DOCKER_ASSETS_PATH/Dockerfile.${ECR_REPOSITORY}.pre-cache -t $ECR_REGISTRY/$ECR_REPOSITORY:${RUBY_VERSION}--pre-cache .
 
-          # tag it the way the subsequent Dockerfiles know it
-          echo tagging pre-cache
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:latest--pre-cache ${ECR_REPOSITORY}:latest--pre-cache
+          echo Tagging pre-cache so local dockerfiles will work
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:${RUBY_VERSION}--pre-cache ${ECR_REPOSITORY}:latest--pre-cache
+
+          echo Pushing pre-cache
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${RUBY_VERSION}--pre-cache
         fi
 
         # the pre-cache image is like a stale version of the code. This builds the most recent things
@@ -100,13 +101,13 @@ jobs:
 
         if [ -f $DOCKER_ASSETS_PATH/Dockerfile.${ECR_REPOSITORY}.dj ];
         then
-          echo building dj
+          echo Building dj
           docker build --file=$DOCKER_ASSETS_PATH/Dockerfile.${ECR_REPOSITORY}.dj -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG--dj .
         else
-          echo not building dj
+          echo Not building dj
         fi
 
-        echo pushing base and web
+        echo Pushing base and web
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG--base
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG--web
         if [ -f $DOCKER_ASSETS_PATH/Dockerfile.${ECR_REPOSITORY}.dj ];
