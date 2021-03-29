@@ -6,7 +6,6 @@ require 'aws-sdk-cloudwatchlogs'
 require 'aws-sdk-ec2'
 
 class RollOut
-  attr_accessor :aws_profile
   attr_accessor :cluster
   attr_accessor :default_environment
   attr_accessor :deployment_id # Used to verify when the deploy_tasks script finishes
@@ -48,8 +47,7 @@ class RollOut
   NOT_SPOT = 'not-spot'
 
   def initialize(image_base:, target_group_name:, target_group_arn:, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, fqdn:, system_status_path: 'system_status/details')
-    self.aws_profile         = ENV.fetch('AWS_PROFILE')
-    self.cluster             = ENV.fetch('AWS_CLUSTER') { self.aws_profile }
+    self.cluster             = ENV.fetch('AWS_CLUSTER') { ENV.fetch('AWS_PROFILE') { ENV.fetch('AWS_VAULT') } }
     self.image_base          = image_base
     self.secrets_arn         = secrets_arn
     self.target_group_arn    = target_group_arn
@@ -709,7 +707,7 @@ class RollOut
     end
   end
 
-  define_method(:ecs) { Aws::ECS::Client.new(profile: aws_profile) }
-  define_method(:ec2) { Aws::EC2::Client.new(profile: aws_profile) }
-  define_method(:cwl) { Aws::CloudWatchLogs::Client.new(profile: aws_profile) }
+  define_method(:ecs) { Aws::ECS::Client.new }
+  define_method(:ec2) { Aws::EC2::Client.new }
+  define_method(:cwl) { Aws::CloudWatchLogs::Client.new }
 end
