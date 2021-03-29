@@ -14,7 +14,7 @@ class Deployer
 
   ROOT_PATH   = File.realpath(File.join(__dir__, '..', '..'))
   ASSETS_PATH = File.join(ROOT_PATH, 'config', 'docker_assets')
-  AWS_PROFILE = ENV.fetch('AWS_PROFILE')
+  AWS_PROFILE = ENV.fetch('AWS_PROFILE') { ENV.fetch('AWS_VAULT') }
   TEST_HOST   = 'test-host.dev.test'
   TEST_PORT   = 9999
   WAIT_TIME   = 2
