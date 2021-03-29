@@ -73,6 +73,8 @@ class RollOut
       self.rails_env = 'production'
     elsif target_group_name.match?(/staging/)
       self.rails_env = 'staging'
+    elsif target_group_name.match?(/sandbox/)
+      self.rails_env = 'staging'
     else
       raise "Cannot figure out environment from target_group_name!"
     end
