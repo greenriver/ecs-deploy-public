@@ -444,6 +444,33 @@ class RollOut
     self.task_definition = results.to_h.dig(:task_definition, :task_definition_arn)
   end
 
+  # Abstraction that lets the cluster provision more/less EC2 instances based
+  # on the requirements of the containers we want to run
+  def _capacity_providers
+    @_capacity_providers ||= ecs.describe_clusters(clusters: [self.cluster]).clusters.first.capacity_providers
+  end
+
+  # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-placement-strategies.html
+  def _placement_strategy
+    [
+      {
+        # distribute across zones first
+        "field": "attribute:ecs.availability-zone",
+        "type": "spread"
+      },
+      {
+        # Then try to maximize utilization (minimize number of EC2 instances)
+        "field": "memory",
+        "type": "binpack"
+      },
+      {
+        # Tie-breaker is to put tasks on difference instances, but I don't know
+        # if we ever would get to this choice
+        "field": "instanceId",
+        "type": "spread"
+      }
+    ]
+  end
   def _run_task!
     _make_cloudwatch_group!
 
@@ -635,22 +662,6 @@ class RollOut
 
     five_minutes = 5 * 60
 
-    # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-placement-strategies.html
-    placement_strategy = [
-      {
-        "field": "attribute:ecs.availability-zone",
-        "type": "spread"
-      },
-      {
-        "field": "instanceId",
-        "type": "spread"
-      },
-      {
-        "type": "random"
-      },
-
-    ]
-
     if service_exists
       puts "[INFO] Updating #{name} to #{task_definition.split(/:/).last}: #{desired_count} containers"
       payload = {
@@ -659,7 +670,7 @@ class RollOut
         desired_count: desired_count,
         task_definition: task_definition,
         # placement_constraints: placement_constraints,
-        placement_strategy: placement_strategy,
+        placement_strategy: _placement_strategy,
         deployment_configuration: {
           maximum_percent: maximum_percent,
           minimum_healthy_percent: minimum_healthy_percent,
@@ -684,7 +695,7 @@ class RollOut
         },
         launch_type: 'EC2',
         # placement_constraints: placement_constraints,
-        placement_strategy: placement_strategy,
+        placement_strategy: _placement_strategy,
         load_balancers: load_balancers,
       }
 
