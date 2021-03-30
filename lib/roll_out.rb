@@ -28,7 +28,9 @@ class RollOut
   # FIXME: cpu shares as parameter
   # FIXME: log level as parameter
 
-  DEFAULT_SOFT_WEB_RAM_MB = 1800
+  CLUSTER = ENV.fetch('AWS_CLUSTER') { ENV.fetch('AWS_PROFILE') { ENV.fetch('AWS_VAULT') } }
+
+  DEFAULT_SOFT_WEB_RAM_MB = CLUSTER == 'hnmi' ? 480 : 1800
 
   DEFAULT_SOFT_DJ_RAM_MB = ->(target_group_name) do
     if target_group_name.match?(/hnmi/)
@@ -38,7 +40,7 @@ class RollOut
     end
   end
 
-  DEFAULT_SOFT_RAM_MB = 1800
+  DEFAULT_SOFT_RAM_MB = CLUSTER == 'hnmi' ? 300 : 1800
 
   RAM_OVERCOMMIT_MULTIPLIER = ->(target_group_name) { target_group_name.match?(/staging/) ? 5 : 3 }
 
