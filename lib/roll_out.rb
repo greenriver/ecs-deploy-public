@@ -29,7 +29,7 @@ class RollOut
   # FIXME: cpu shares as parameter
   # FIXME: log level as parameter
 
-  CLUSTER = ENV.fetch('AWS_CLUSTER') { ENV.fetch('AWS_PROFILE') { ENV.fetch('AWS_VAULT') } }
+  CLUSTER = ENV.fetch('AWS_CLUSTER')
 
   DEFAULT_SOFT_WEB_RAM_MB = CLUSTER.match?(/hnmi/) ? 480 : 1800
 
@@ -50,7 +50,7 @@ class RollOut
   NOT_SPOT = 'not-spot'
 
   def initialize(image_base:, target_group_name:, target_group_arn:, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, fqdn:, system_status_path: 'system_status/details')
-    self.cluster             = ENV.fetch('AWS_CLUSTER') { ENV.fetch('AWS_PROFILE') { ENV.fetch('AWS_VAULT') } }
+    self.cluster             = ENV.fetch('AWS_CLUSTER')
     self.image_base          = image_base
     self.secrets_arn         = secrets_arn
     self.target_group_arn    = target_group_arn
@@ -356,18 +356,16 @@ class RollOut
 
     # only web and staging containers can live on spot instances
     # all others are flagged as non-spot
-    if name.match?(/web/)
-      puts "[INFO][CONST] Not constraining #{name}"
-    elsif name.match?(/staging/)
-      puts "[INFO][CONST] Not constraining #{name}"
-    else
-      puts "[INFO][CONST] Constraining #{name} to non-spot-instances"
+    # if name.match?(/web|staging|sandbox/)
+    #   puts "[INFO][CONST] Not constraining #{name}"
+    # else
+    #   puts "[INFO][CONST] Constraining #{name} to non-spot-instances"
 
-      placement_constraints << {
-        type: 'memberOf',
-        expression: "attribute:instance-lifecycle == #{NOT_SPOT}",
-      }
-    end
+    #   placement_constraints << {
+    #     type: 'memberOf',
+    #     expression: "attribute:instance-lifecycle == #{NOT_SPOT}",
+    #   }
+    # end
 
     task_definition_payload = {
       container_definitions: [container_definition],
@@ -434,10 +432,10 @@ class RollOut
     }
 
     if _capacity_providers.length > 0
-      puts "[INFO] Using spot capacity provider: #{_spot_capacity_provider_name}"
+      puts "[INFO] Using capacity provider: #{_capacity_provider_name}"
       run_task_payload[:capacity_provider_strategy] = [
         {
-          capacity_provider: _spot_capacity_provider_name,
+          capacity_provider: _capacity_provider_name,
           weight: 1,
           base: 1,
         },
