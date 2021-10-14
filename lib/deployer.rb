@@ -50,7 +50,9 @@ class Deployer
 
   attr_accessor :system_status_path
 
-  def initialize(target_group_name:, assume_ci_build: true, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, registry_id:, repo_name:, fqdn:, system_status_path: nil)
+  attr_accessor :event_bridge_role_name
+
+  def initialize(target_group_name:, assume_ci_build: true, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, registry_id:, repo_name:, fqdn:, system_status_path: nil, event_bridge_role_name: 'ecsEventsRole')
     self.target_group_name = target_group_name
     self.assume_ci_build   = assume_ci_build
     self.secrets_arn       = secrets_arn
@@ -65,6 +67,7 @@ class Deployer
     self.repo_name         = repo_name
     self.variant           = 'web'
     self.system_status_path = system_status_path
+    self.event_bridge_role_name = event_bridge_role_name
 
     Dir.chdir(_root)
   end
@@ -132,6 +135,7 @@ class Deployer
         task_role: task_role,
         web_options: web_options,
         system_status_path: system_status_path,
+        event_bridge_role_name: event_bridge_role_name,
       })
   end
 

@@ -25,6 +25,8 @@ class RollOut
   attr_accessor :task_role
   attr_accessor :web_options
   attr_accessor :only_check_ram
+  attr_accessor :event_bridge_role_name
+
 
   # FIXME: cpu shares as parameter
   # FIXME: log level as parameter
@@ -49,7 +51,7 @@ class RollOut
 
   NOT_SPOT = 'not-spot'
 
-  def initialize(image_base:, target_group_name:, target_group_arn:, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, fqdn:, system_status_path: 'system_status/details')
+  def initialize(image_base:, target_group_name:, target_group_arn:, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, fqdn:, system_status_path: 'system_status/details', event_bridge_role_name: )
     self.cluster             = ENV.fetch('AWS_CLUSTER')
     self.image_base          = image_base
     self.secrets_arn         = secrets_arn
@@ -61,6 +63,7 @@ class RollOut
     self.web_options         = web_options
     self.status_uri          = URI("https://#{fqdn}/#{system_status_path}")
     self.only_check_ram      = false
+    self.event_bridge_role_name = event_bridge_role_name
 
     if task_role.nil? || task_role.match(/^\s*$/)
       puts "\n[WARN] task role was not set. The containers will use the role of the entire instance\n\n"
@@ -109,6 +112,7 @@ class RollOut
       { "name" => "CLUSTER_NAME", "value" => self.cluster },
       { "name" => "RAILS_ENV", "value" => rails_env },
       { "name" => "DEPLOYMENT_ID", "value" => self.deployment_id },
+      { "name" => "EVENT_BRIDGE_ROLE_NAME", "value" => event_bridge_role_name },
       # { "name" => "RAILS_MAX_THREADS", "value" => '5' },
       # { "name" => "WEB_CONCURRENCY", "value" =>  '2' },
       # { "name" => "PUMA_PERSISTENT_TIMEOUT", "value" =>  '70' },
