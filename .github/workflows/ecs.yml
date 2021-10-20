@@ -121,7 +121,6 @@ jobs:
 
         echo Pushing 'latest' tags
         BRANCH=${GITHUB_REF#refs/heads/}
-        if [[ "$BRANCH" =~ ^(deploy-)$]]
         if [[ "$BRANCH" =~ ^(production|staging|sandbox|demo|main|deploy-.*)$ ]]; then
           IDENTIFIER=${BRANCH#deploy-} # Strip deploy prefix if present
           LATEST_TAG="latest-$IDENTIFIER"
