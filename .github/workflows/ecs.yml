@@ -121,7 +121,7 @@ jobs:
 
         echo Pushing 'latest' tags
         BRANCH=${GITHUB_REF#refs/heads/}
-        if [[ "$BRANCH" =~ ^(production|staging|sandbox|demo|main)$ ]]; then
+        if [[ "$BRANCH" =~ ^(production|staging|sandbox|demo|main|deploy|deploy-.*)$ ]]; then
           LATEST_TAG="latest-$BRANCH"
           LATEST_BASE="$ECR_REGISTRY/$ECR_REPOSITORY:${LATEST_TAG}--base"
           LATEST_WEB="$ECR_REGISTRY/$ECR_REPOSITORY:${LATEST_TAG}--web"
