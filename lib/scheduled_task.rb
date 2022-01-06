@@ -2,6 +2,7 @@
 
 require 'aws-sdk-cloudwatchevents'
 require 'aws-sdk-ecs'
+require_relative 'shared_logic'
 
 class ScheduledTask
   attr_accessor :cluster_name
@@ -12,6 +13,9 @@ class ScheduledTask
   attr_accessor :schedule_expression
   attr_accessor :target_group_name
   attr_accessor :task_definition_arn
+  attr_accessor :capacity_provider_strategy
+
+  include SharedLogic
 
   MAX_NAME_LENGTH = 64
 
@@ -121,7 +125,13 @@ class ScheduledTask
           ecs_parameters: {
             task_definition_arn: task_definition_arn,
             task_count: 1,
-            launch_type: "EC2",
+            # Issues with this put_targets working? Try removing capacity
+            # provider line and using launch_type only.
+            # https://github.com/aws/containers-roadmap/issues/937
+            # launch_type: "EC2",
+            capacity_provider_strategy: capacity_provider_strategy,
+            # placement_constraints: _placement_constraints,
+            placement_strategy: _placement_strategy,
           },
         },
       ],

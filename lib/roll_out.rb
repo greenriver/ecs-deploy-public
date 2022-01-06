@@ -35,7 +35,7 @@ class RollOut
 
   DEFAULT_SOFT_DJ_RAM_MB = ->(target_group_name) do
     if target_group_name.match?(/hnmi/)
-      1500
+      1000
     else
       target_group_name.match?(/staging/) ? 1500 : 4000
     end

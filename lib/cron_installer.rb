@@ -27,6 +27,7 @@ class CronInstaller
         role_arn: role_arn,
         task_definition_arn: task_definition_arn,
         command: command,
+        capacity_provider_strategy: _capacity_provider_strategy,
       }
 
       scheduled_task = ScheduledTask.new(params)
@@ -39,6 +40,20 @@ class CronInstaller
   end
 
   private
+
+  def _capacity_provider_strategy
+    if !target_group_name.match?(/hnmi/)
+      raise "This is hard-coded only for hnmi. code needs to be updated to support other deployments"
+    end
+    [
+      {
+        capacity_provider: "hnmi-capacity-provider"
+        weight: 1,
+        base: 1,
+      },
+    ]
+  end
+
 
   def target_group_name
     ENV.fetch('TARGET_GROUP_NAME')
