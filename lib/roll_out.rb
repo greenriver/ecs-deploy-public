@@ -206,11 +206,11 @@ class RollOut
         "host_port" => 0,
         "protocol" => "tcp"
       }],
-      ports: [{
-        "container_port" => 443,
-        "host_port" => 0,
-        "protocol" => "tcp"
-      }],
+      # ports: [{
+      #   "container_port" => 443,
+      #   "host_port" => 0,
+      #   "protocol" => "tcp"
+      # }],
       name: name,
     )
 
