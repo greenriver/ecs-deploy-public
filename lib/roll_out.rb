@@ -206,11 +206,6 @@ class RollOut
         "host_port" => 0,
         "protocol" => "tcp"
       }],
-      # ports: [{
-      #   "container_port" => 443,
-      #   "host_port" => 0,
-      #   "protocol" => "tcp"
-      # }],
       name: name,
     )
 
@@ -226,7 +221,7 @@ class RollOut
 
     _start_service!(
       capacity_provider: _capacity_provider_name,
-      name: name,
+      name: name.gsub(/v2/,'v3'),
       load_balancers: lb,
       desired_count: web_options['container_count'] || 1,
       minimum_healthy_percent: minimum,
