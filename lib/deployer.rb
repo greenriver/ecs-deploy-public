@@ -47,8 +47,8 @@ class Deployer
   # The fully-qualified domain name of the application
   # We use this so we can get data from the app about the deployment state
   attr_accessor :fqdn
-
   attr_accessor :system_status_path
+  attr_accessor :versions
 
   def initialize(target_group_name:, assume_ci_build: true, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, registry_id:, repo_name:, fqdn:, system_status_path: nil, versions: {})
     self.target_group_name = target_group_name

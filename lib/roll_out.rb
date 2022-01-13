@@ -216,7 +216,7 @@ class RollOut
         "host_port" => 0,
         "protocol" => "tcp"
       }],
-      name: name + maybe_version_string(:ecs_task_web),
+      name: name + maybe_version_string(:ecs_task_web)
     )
 
     return if self.only_check_ram
@@ -231,7 +231,7 @@ class RollOut
 
     _start_service!(
       capacity_provider: _capacity_provider_name,
-      name: name + maybe_version_string(:ecs_service_web)
+      name: name + maybe_version_string(:ecs_service_web),
       load_balancers: lb,
       desired_count: web_options['container_count'] || 1,
       minimum_healthy_percent: minimum,
