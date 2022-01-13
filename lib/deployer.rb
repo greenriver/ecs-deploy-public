@@ -50,7 +50,7 @@ class Deployer
 
   attr_accessor :system_status_path
 
-  def initialize(target_group_name:, assume_ci_build: true, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, registry_id:, repo_name:, fqdn:, system_status_path: nil)
+  def initialize(target_group_name:, assume_ci_build: true, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, registry_id:, repo_name:, fqdn:, system_status_path: nil, versions: {})
     self.target_group_name = target_group_name
     self.assume_ci_build   = assume_ci_build
     self.secrets_arn       = secrets_arn
@@ -65,6 +65,7 @@ class Deployer
     self.repo_name         = repo_name
     self.variant           = 'web'
     self.system_status_path = system_status_path
+    self.versions          = versions
 
     Dir.chdir(_root)
   end
@@ -132,6 +133,7 @@ class Deployer
         task_role: task_role,
         web_options: web_options,
         system_status_path: system_status_path,
+        versions: versions,
       })
   end
 
@@ -226,9 +228,13 @@ class Deployer
     @_ruby_version ||= File.read('.ruby-version').chomp
   end
 
+  def _pre_cache_version
+    @_pre_cache_version ||= File.read('.pre-cache-version').chomp
+  end
+
   def _set_image_tag!
     if variant == 'pre-cache'
-      self.image_tag = "#{_ruby_version}--pre-cache"
+      self.image_tag = "#{_ruby_version}-#{_pre_cache_version}--pre-cache"
     elsif ENV['IMAGE_TAG']
       self.image_tag = ENV['IMAGE_TAG'] + "--#{variant}"
     else
@@ -313,7 +319,7 @@ class Deployer
   end
 
   def _pre_cache_image_exists?
-    result = `docker image ls -f 'reference=#{repo_name}' | grep #{_ruby_version}--pre-cache`
+    result = `docker image ls -f 'reference=#{repo_name}' | grep #{_ruby_version}-#{_pre_cache_version}--pre-cache`
 
     !result.match?(/^\s*$/)
   end
