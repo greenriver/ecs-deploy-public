@@ -51,7 +51,7 @@ class RollOut
   NOT_SPOT = 'not-spot'
 
   def initialize(image_base:, target_group_name:, target_group_arn:, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, fqdn:, system_status_path: 'system_status/details', versions: {})
-    self.cluster             = ENV.fetch('AWS_CLUSTER')
+    self.cluster             = ENV.fetch('AWS_CLUSTER') { ENV.fetch('AWS_PROFILE') { ENV.fetch('AWS_VAULT') } }
     self.image_base          = image_base
     self.secrets_arn         = secrets_arn
     self.target_group_arn    = target_group_arn
@@ -265,6 +265,7 @@ class RollOut
 
     _start_service!(
       name: name,
+      capacity_provider: _capacity_provider_name,
       desired_count: dj_options['container_count'] || 1,
       maximum_percent: maximum,
       minimum_healthy_percent: minimum,
@@ -277,7 +278,7 @@ class RollOut
     desired_count = container_count || 1
 
     if desired_count == 0
-      return [0, 0]
+      return [0, 100]
     elsif desired_count == 1
       [100, 200]
     else
