@@ -256,6 +256,7 @@ class RollOut
 
     _register_task!(
       soft_mem_limit_mb: soft_mem_limit_mb,
+      cpu_shares: dj_options.key?('cpu_shares') ? dj_options['cpu_shares'] : DEFAULT_CPU_SHARES,
       image: image_base + '--dj',
       name: name,
       environment: environment
