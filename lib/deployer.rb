@@ -255,7 +255,8 @@ class Deployer
     manifest = image.image_manifest
 
     if manifest.nil?
-      raise "No manifest matching tag #{image_tag} found during latest-* check, something is wrong."
+      puts "WARNING: No manifest matching tag #{image_tag} found during latest-* check, something is wrong."
+      return
     end
 
     putparams = {
