@@ -47,7 +47,7 @@ class CronInstaller
     end
     [
       {
-        capacity_provider: "hnmi-capacity-provider"
+        capacity_provider: target_group_name.match?(/production/) ? "hnmi-capacity-provider" : "hnmi-sandbox-capacity-provider"
         weight: 1,
         base: 1,
       },
