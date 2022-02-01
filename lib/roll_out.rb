@@ -26,6 +26,7 @@ class RollOut
   attr_accessor :web_options
   attr_accessor :only_check_ram
   attr_accessor :versions
+  attr_accessor :capacity_provider
 
   # FIXME: cpu shares as parameter
   # FIXME: log level as parameter
@@ -50,7 +51,7 @@ class RollOut
 
   NOT_SPOT = 'not-spot'
 
-  def initialize(image_base:, target_group_name:, target_group_arn:, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, fqdn:, system_status_path: 'system_status/details', versions: {})
+  def initialize(image_base:, target_group_name:, target_group_arn:, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, fqdn:, system_status_path: 'system_status/details', versions: {}, capacity_provider:)
     self.cluster             = ENV.fetch('AWS_CLUSTER') { ENV.fetch('AWS_PROFILE') { ENV.fetch('AWS_VAULT') } }
     self.image_base          = image_base
     self.secrets_arn         = secrets_arn
@@ -63,6 +64,7 @@ class RollOut
     self.status_uri          = URI("https://#{fqdn}/#{system_status_path}")
     self.only_check_ram      = false
     self.versions            = versions
+    self.capacity_provider   = capacity_provider
 
     if task_role.nil? || task_role.match(/^\s*$/)
       puts "\n[WARN] task role was not set. The containers will use the role of the entire instance\n\n"
@@ -230,7 +232,7 @@ class RollOut
     minimum, maximum = _get_min_max_from_desired(web_options['container_count'])
 
     _start_service!(
-      capacity_provider: _capacity_provider_name,
+      capacity_provider: capacity_provider,
       name: name + maybe_version_string(:ecs_service_web),
       load_balancers: lb,
       desired_count: web_options['container_count'] || 1,
@@ -265,7 +267,7 @@ class RollOut
 
     _start_service!(
       name: name,
-      capacity_provider: _capacity_provider_name,
+      capacity_provider: capacity_provider,
       desired_count: dj_options['container_count'] || 1,
       maximum_percent: maximum,
       minimum_healthy_percent: minimum,
@@ -397,16 +399,6 @@ class RollOut
     self.task_definition = results.to_h.dig(:task_definition, :task_definition_arn)
   end
 
-  # Abstraction that lets the cluster provision more/less EC2 instances based
-  # on the requirements of the containers we want to run
-  def _capacity_providers
-    @_capacity_providers ||= ecs.describe_clusters(clusters: [self.cluster]).clusters.first.capacity_providers
-  end
-
-  def _capacity_provider_name
-    _capacity_providers.first
-  end
-
   # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-placement-strategies.html
   def _placement_strategy
     [
@@ -442,11 +434,11 @@ class RollOut
       task_definition: task_definition,
     }
 
-    if _capacity_providers.length > 0
-      puts "[INFO] Using capacity provider: #{_capacity_provider_name}"
+    if capacity_provider
+      puts "[INFO] Using capacity provider: #{capacity_provider}"
       run_task_payload[:capacity_provider_strategy] = [
         {
-          capacity_provider: _capacity_provider_name,
+          capacity_provider: capacity_provider,
           weight: 1,
           base: 1,
         },

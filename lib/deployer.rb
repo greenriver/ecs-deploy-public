@@ -52,7 +52,9 @@ class Deployer
   attr_accessor :system_status_path
   attr_accessor :versions
 
-  def initialize(target_group_name:, assume_ci_build: true, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, registry_id:, repo_name:, fqdn:, system_status_path: nil, versions: {})
+  attr_accessor :capacity_provider
+
+  def initialize(target_group_name:, assume_ci_build: true, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, registry_id:, repo_name:, fqdn:, system_status_path: nil, versions: {}, capacity_provider:)
     self.target_group_name = target_group_name
     self.assume_ci_build   = assume_ci_build
     self.secrets_arn       = secrets_arn
@@ -69,6 +71,7 @@ class Deployer
     self.system_status_path = system_status_path
     self.versions          = versions
     self.version           = `git rev-parse --short=9 HEAD`.chomp
+    self.capacity_provider = capacity_provider
 
     Dir.chdir(_root)
   end
@@ -138,6 +141,7 @@ class Deployer
         web_options: web_options,
         system_status_path: system_status_path,
         versions: versions,
+        capacity_provider: capacity_provider,
       })
   end
 
