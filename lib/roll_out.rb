@@ -26,6 +26,7 @@ class RollOut
   attr_accessor :web_options
   attr_accessor :only_check_ram
   attr_accessor :versions
+  attr_accessor :capacity_provider
 
   # FIXME: cpu shares as parameter
   # FIXME: log level as parameter

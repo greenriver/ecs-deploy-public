@@ -52,6 +52,8 @@ class Deployer
   attr_accessor :system_status_path
   attr_accessor :versions
 
+  attr_accessor :capacity_provider
+
   def initialize(target_group_name:, assume_ci_build: true, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, registry_id:, repo_name:, fqdn:, system_status_path: nil, versions: {}, capacity_provider:)
     self.target_group_name = target_group_name
     self.assume_ci_build   = assume_ci_build
