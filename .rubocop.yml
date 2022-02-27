@@ -183,3 +183,6 @@ Style/CaseLikeIf:
 
 Style/CommentAnnotation:
   Enabled: false
+
+Style/AccessorGrouping:
+  Enabled: false
