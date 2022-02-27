@@ -1,13 +1,6 @@
 AllCops:
   Exclude:
-    - db/schema.rb
-    - db/migrate/*
-    - app/assets/**/*
-    - node_modules/**/*
-    - lib/tasks/seed.rake
-    - lib/guard/bundler_audit.rb
     - bin/*
-    - vendor/**/*
 
 # We don't care about method length, since we check method cyclomatic
 # complexity.
@@ -21,13 +14,8 @@ Metrics/AbcSize:
   Max: 175
 Metrics/CyclomaticComplexity:
   Max: 50
-  #Exclude:
-  #  - 'lib/something.rb'
 Metrics/PerceivedComplexity:
   Max: 50
-Layout/LineLength:
-  Max: 200
-
 # Trailing commas make for clearer diffs because the last line won't appear
 # to have been changed, as it would if it lacked a comma and had one added.
 Style/TrailingCommaInArguments:
@@ -36,6 +24,15 @@ Style/TrailingCommaInArrayLiteral:
   EnforcedStyleForMultiline: comma
 Style/TrailingCommaInHashLiteral:
   EnforcedStyleForMultiline: comma
+
+Style/OptionalBooleanParameter:
+  Enabled: false
+
+Style/LineEndConcatenation:
+  Enabled: false
+
+Lint/ConstantDefinitionInBlock:
+  Enabled: false
 
 # Cop supports --auto-correct.
 # Configuration parameters: PreferredDelimiters.
@@ -46,26 +43,12 @@ Style/PercentLiteralDelimiters:
     '%w': '[]'
     '%W': '[]'
 
-Style/IfUnlessModifier:
-  Enabled: false
-
 Style/AndOr:
   Enabled: true
 
 Style/ClassAndModuleChildren:
-  Enabled: true
-  Exclude:
-    - app/graphql/**/*
-
-Style/GuardClause:
-  Enabled: false
-
-Naming/PredicateName:
-  Exclude:
-    - app/models/field_normalizer/*
-
-Style/NumericPredicate:
-  Enabled: false
+  Enabled:
+    false
 
 Style/ConditionalAssignment:
   Enabled: false
@@ -73,14 +56,14 @@ Style/ConditionalAssignment:
 Style/FormatStringToken:
   Enabled: false
 
+Layout/LineLength:
+  Enabled: false
+
 Metrics/BlockLength:
   Enabled: false
 
 Style/RescueStandardError:
   Enabled: true
-
-Style/StringLiterals:
-  Enabled: false
 
 Style/FrozenStringLiteralComment:
   Enabled: false
@@ -91,10 +74,15 @@ Style/CommentedKeyword:
 Naming/VariableNumber:
   Enabled: false
 
-Style/MixinUsage:
-  Enabled: false
+Naming/MethodParameterName:
+  AllowedNames:
+    - as
+    - id
+    - by
+    - io
+    - to
 
-Layout/FirstHashElementIndentation:
+Style/MixinUsage:
   Enabled: false
 
 Layout/DotPosition:
@@ -109,17 +97,8 @@ Style/Documentation:
 Style/MultilineBlockChain:
   Enabled: false
 
-Layout/SpaceInsideArrayLiteralBrackets:
-  Enabled: false
-
-Layout/SpaceInsideHashLiteralBraces:
-  Enabled: false
-
 Layout/EndAlignment:
   EnforcedStyleAlignWith: start_of_line
-
-Lint/SuppressedException:
-  Enabled: true
 
 Lint/RescueException:
   Enabled: false
@@ -145,6 +124,7 @@ Metrics/ParameterLists:
 
 Style/RegexpLiteral:
   EnforcedStyle: slashes
+  AllowInnerSlashes: true
 
 Lint/UnusedMethodArgument:
   Enabled: true
@@ -188,14 +168,17 @@ Style/AsciiComments:
 Style/OneLineConditional:
   Enabled: false
 
-# Layout/SpaceAroundMethodCallOperator:
-#   Enabled: false
+Style/StringConcatenation:
+  Enabled: false
 
-# Lint/RaiseException:
-#   Enabled: false
+Bundler/OrderedGems:
+  Enabled: false
 
-# Lint/StructNewOverride:
-#   Enabled: false
+Style/HashAsLastArrayItem:
+  Enabled: false
 
-# Style/ExponentialNotation:
-#   Enabled: false
+Style/CaseLikeIf:
+  Enabled: false
+
+Style/CommentAnnotation:
+  Enabled: false
