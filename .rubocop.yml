@@ -1,6 +1,7 @@
 AllCops:
   Exclude:
     - bin/*
+  NewCops: disable
 
 # We don't care about method length, since we check method cyclomatic
 # complexity.
