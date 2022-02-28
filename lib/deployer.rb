@@ -2,19 +2,17 @@ require 'date'
 require 'byebug'
 require 'English'
 require_relative 'roll_out'
-
-# gem install aws_sdk --version=3.1.5
-require 'aws-sdk-elasticloadbalancingv2'
-require 'aws-sdk-ecr'
-require 'aws-sdk-secretsmanager'
+require_relative 'aws_sdk_helpers'
 
 class Deployer
+  include AwsSdkHelpers::Helpers
+
   attr_accessor :repo_name
   attr_accessor :registry_id
 
   ROOT_PATH   = File.realpath(File.join(__dir__, '..', '..'))
   ASSETS_PATH = File.join(ROOT_PATH, 'config', 'docker_assets')
-  TEST_HOST   = 'test-host.dev.test'
+  TEST_HOST   = 'test-host.dev.test'.freeze
   TEST_PORT   = 9999
   WAIT_TIME   = 2
 
@@ -54,7 +52,24 @@ class Deployer
 
   attr_accessor :capacity_provider
 
-  def initialize(target_group_name:, assume_ci_build: true, secrets_arn:, execution_role:, task_role: nil, dj_options: nil, web_options:, registry_id:, repo_name:, fqdn:, system_status_path: nil, versions: {}, capacity_provider:)
+  attr_accessor :cluster
+
+  def initialize(
+    target_group_name:,
+    secrets_arn:,
+    execution_role:,
+    capacity_provider:,
+    web_options:,
+    registry_id:,
+    repo_name:,
+    fqdn:,
+    assume_ci_build: true,
+    task_role: nil,
+    dj_options: nil,
+    system_status_path: nil,
+    versions: {}
+  )
+    self.cluster           = _cluster_name
     self.target_group_name = target_group_name
     self.assume_ci_build   = assume_ci_build
     self.secrets_arn       = secrets_arn
@@ -81,6 +96,12 @@ class Deployer
     roll_out.only_web!
   end
 
+  def check_ram!
+    _set_revision!
+    _set_image_tag!
+    roll_out.check_ram!
+  end
+
   def run!
     _initial_steps
 
@@ -100,9 +121,9 @@ class Deployer
     _initial_steps
 
     print "Boostrapping databases for #{target_group_name}. Are you sure? (Y/N): "
-    unsure = STDIN.readline
+    unsure = $stdin.readline
     if unsure.chomp.upcase != 'Y'
-      puts "Okay. Not running the task."
+      puts 'Okay. Not running the task.'
       exit
     end
 
@@ -129,27 +150,29 @@ class Deployer
 
   def roll_out
     @roll_out ||=
-      RollOut.new({
-        dj_options: dj_options,
-        image_base: _remote_tag_base,
-        secrets_arn: secrets_arn,
-        target_group_arn: _target_group_arn,
-        target_group_name: target_group_name,
-        execution_role: execution_role,
-        fqdn: fqdn,
-        task_role: task_role,
-        web_options: web_options,
-        system_status_path: system_status_path,
-        versions: versions,
-        capacity_provider: capacity_provider,
-      })
+      RollOut.new(
+        {
+          dj_options: dj_options,
+          image_base: _remote_tag_base,
+          secrets_arn: secrets_arn,
+          target_group_arn: _target_group_arn,
+          target_group_name: target_group_name,
+          execution_role: execution_role,
+          fqdn: fqdn,
+          task_role: task_role,
+          web_options: web_options,
+          system_status_path: system_status_path,
+          versions: versions,
+          capacity_provider: capacity_provider,
+        },
+      )
   end
 
   def _ensure_clean_repo!
-    if `git status --porcelain` != ''
-      puts "Aborting since git is not clean"
-      exit 1
-    end
+    return unless `git status --porcelain` != ''
+
+    puts 'Aborting since git is not clean'
+    exit 1
   end
 
   def _set_revision!
@@ -161,9 +184,7 @@ class Deployer
     remote = `git ls-remote origin | egrep 'refs/heads/#{branch}$'`.chomp
     our_commit = `git rev-parse #{branch}`.chomp
 
-    if ! remote.start_with?(our_commit)
-      raise "Push or pull your branch first!"
-    end
+    raise 'Push or pull your branch first!' unless remote.start_with?(our_commit)
   end
 
   def _docker_login!
@@ -176,20 +197,18 @@ class Deployer
   end
 
   def _build_and_push_all!
-    if !_pre_cache_image_exists? || force_build
-      _build_and_push_image('pre-cache')
-    end
+    _build_and_push_image('pre-cache') if !_pre_cache_image_exists? || force_build
     _build_and_push_image('base')
     _build_and_push_image('web')
     _build_and_push_image('dj')
-    #_build_and_push_image('cron')
+    # _build_and_push_image('cron')
   end
 
   def _build_and_push_image(variant)
     self.variant = variant
 
     unless File.exist?(_dockerfile_path)
-      puts "[WARN] Not building #{variant} since the dockerfile #{_dockerfile_path} doesn't exist"
+      puts "[WARN] Not building #{self.variant} since the dockerfile #{_dockerfile_path} doesn't exist"
       return
     end
 
@@ -232,16 +251,16 @@ class Deployer
 
     puts "[INFO] Update latest tag for '#{image_tag}':"
     if image_tag_latest.nil?
-      puts ">> Skipping, no latest tag set (this is the pre-cache image)."
+      puts '>> Skipping, no latest tag set (this is the pre-cache image).'
       return
     end
 
     getparams = {
       repository_name: repo_name,
       image_ids: [
-        {image_tag: image_tag},
-        {image_tag: image_tag_latest}
-      ]
+        { image_tag: image_tag },
+        { image_tag: image_tag_latest },
+      ],
     }
     images = ecr.batch_get_image(getparams).images
 
@@ -249,35 +268,30 @@ class Deployer
       puts ">> Latest tag '#{image_tag_latest}' is already even with tag '#{image_tag}'."
       return
     elsif images.count > 2
-      puts "❗ WARNING: More than two images found during latest-* check, something is wrong."
+      puts '❗ WARNING: More than two images found during latest-* check, something is wrong.'
       return
     elsif images.count < 1
       puts "❗ WARNING: No images matching tag #{image_tag} found during latest-* check, something is wrong."
       return
     end
 
-    image = images.find { |image| image.image_id.image_tag == image_tag }
+    image = images.find { |img| img.image_id.image_tag == image_tag }
     manifest = image.image_manifest
 
-    if manifest.nil?
-      puts "❗ WARNING: No manifest matching tag #{image_tag} found during latest-* check, something is wrong."
-      return
-    end
+    puts "❗ WARNING: No manifest matching tag #{image_tag} found during latest-* check, something is wrong." if manifest.nil?
 
     putparams = {
       repository_name: repo_name,
       image_tag: image_tag_latest,
-      image_manifest: manifest
+      image_manifest: manifest,
     }
-    response = ecr.put_image(putparams)
-    # logfile = File.join('tmp', "latest-tag-log--#{image_tag}--#{image_tag_latest}--#{Time.now.strftime('%m-%d--%H:%M:%S')}")
-    # File.write(logfile, response.to_h.inspect)
+    ecr.put_image(putparams)
     puts ">> Latest tag '#{image_tag_latest}' is now even with '#{image_tag}'"
   end
 
   def _check_secrets!
     if secrets_arn.nil?
-      puts "Please specify a secrets arn in your secret.deploy.values.yml file"
+      puts 'Please specify a secrets arn in your secret.deploy.values.yml file'
       exit
     end
 
@@ -296,14 +310,14 @@ class Deployer
   end
 
   def _set_image_tag!
-    if variant == 'pre-cache'
+    if self.variant == 'pre-cache'
       self.image_tag = "#{_ruby_version}-#{_pre_cache_version}--pre-cache"
     elsif ENV['IMAGE_TAG']
-      self.image_tag = ENV['IMAGE_TAG'] + "--#{variant}"
-      self.image_tag_latest = "latest-" + ENV['IMAGE_TAG'] + "--#{variant}"
+      self.image_tag = ENV['IMAGE_TAG'] + "--#{self.variant}"
+      self.image_tag_latest = "latest-#{ENV['IMAGE_TAG']}--#{self.variant}"
     else
-      self.image_tag = "githash-#{version}--#{variant}"
-      self.image_tag_latest = "latest-#{target_group_name}--#{variant}"
+      self.image_tag = "githash-#{version}--#{self.variant}"
+      self.image_tag_latest = "latest-#{target_group_name}--#{self.variant}"
     end
 
     # puts "Setting image tag to #{image_tag}"
@@ -330,10 +344,10 @@ class Deployer
 
   # This is a crude thing, but hopefully will inspire something not crude
   def _test_stack!
-    _run("tmux split-window -h")
+    _run('tmux split-window -h')
     _run("tmux send-keys :1 'cd config/deploy/docker/local-test'")
 
-    puts "Sleeping to let stack boot"
+    puts 'Sleeping to let stack boot'
     sleep 20
 
     _run(<<~CMD)
@@ -347,7 +361,7 @@ class Deployer
 
   def _push_image!
     if debug?
-      puts "Skipping pushing to remote"
+      puts 'Skipping pushing to remote'
       return
     end
 
@@ -367,7 +381,7 @@ class Deployer
       repository_name: repo_name,
       max_results: 100,
       filter: {
-        tag_status: "TAGGED",
+        tag_status: 'TAGGED',
       },
     }
 
@@ -383,36 +397,34 @@ class Deployer
   end
 
   def _pre_cache_image_exists?
-    result = `docker image ls -f 'reference=#{repo_name}' | grep #{_ruby_version}-#{_pre_cache_version}--pre-cache`
+    result = `docker image ls -f 'reference=#{repo_name}' | grep "#{_ruby_version}-#{_pre_cache_version}--pre-cache"`
 
     !result.match?(/^\s*$/)
   end
 
   def _remote_tag
-    repo_url + ":" + image_tag
+    "#{repo_url}:#{image_tag}"
   end
 
   def _remote_latest_tag
-    repo_url + ":" + "latest--#{self.variant}"
+    "#{repo_url}:latest--#{self.variant}"
   end
 
   def _remote_tag_base
     _remote_tag.reverse.sub(/^(\w+--)?/, '').reverse
   end
 
-  def _run(c, alt_msg: nil)
-    cmd = c.gsub(/\n/, ' ').squeeze(' ')
-    puts "Running #{alt_msg || cmd}"
+  def _run(cmd, alt_msg: nil)
+    command = cmd.gsub(/\n/, ' ').squeeze(' ')
+    puts "Running #{alt_msg || command}"
 
-    system(cmd)
+    system(command)
 
-    if $CHILD_STATUS.exitstatus != 0
-      raise "Aborting deployment due to command error"
-    end
+    raise 'Aborting deployment due to command error' if $CHILD_STATUS.exitstatus != 0
   end
 
   def _dockerfile_path
-    "#{_assets_path}/Dockerfile.#{repo_name}.#{variant}"
+    "#{_assets_path}/Dockerfile.#{repo_name}.#{self.variant}"
   end
 
   def _assets_path
@@ -436,8 +448,4 @@ class Deployer
       tg.target_group_name == target_group_name
     end.target_group_arn
   end
-
-  define_method(:elbv2) { Aws::ElasticLoadBalancingV2::Client.new }
-  define_method(:ecr) { Aws::ECR::Client.new }
-  define_method(:secretsmanager) { Aws::SecretsManager::Client.new }
 end
