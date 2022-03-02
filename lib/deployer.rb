@@ -50,15 +50,12 @@ class Deployer
   attr_accessor :system_status_path
   attr_accessor :versions
 
-  attr_accessor :capacity_provider
-
   attr_accessor :cluster
 
   def initialize(
     target_group_name:,
     secrets_arn:,
     execution_role:,
-    capacity_provider:,
     web_options:,
     registry_id:,
     repo_name:,
@@ -86,7 +83,6 @@ class Deployer
     self.system_status_path = system_status_path
     self.versions          = versions
     self.version           = `git rev-parse --short=9 HEAD`.chomp
-    self.capacity_provider = capacity_provider
 
     Dir.chdir(_root)
   end
@@ -163,7 +159,7 @@ class Deployer
           web_options: web_options,
           system_status_path: system_status_path,
           versions: versions,
-          capacity_provider: capacity_provider,
+          capacity_providers: _capacity_providers,
         },
       )
   end

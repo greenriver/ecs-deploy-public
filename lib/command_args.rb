@@ -6,7 +6,7 @@ class CommandArgs
   attr_accessor :deployments
 
   def initialize
-    path = Env.fetch('SECRETS_FILE_PATH', './secret.deploy.values.yml') # Either symlink or pass the env var.
+    path = Env.fetch('ECS_DEPLOY_SECRETS_FILE_PATH', './secret.deploy.values.yml') # Either symlink or pass the env var.
     config = YAML.load_file(path)
     defaults = config['_global_defaults'] || {}
     config.each_key do |key|
