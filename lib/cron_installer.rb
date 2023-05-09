@@ -1,13 +1,14 @@
 #!/usr/bin/env ruby
 
 require_relative 'scheduled_task'
-require 'aws-sdk-iam'
-require 'aws-sdk-ecs'
+require_relative 'aws_sdk_helpers'
 require 'time'
 
 # Run from rails root
 
 class CronInstaller
+  include AwsSdkHelpers::Helpers
+
   MAX_DESCRIPTION_LENGTH = 512
 
   def run!
@@ -33,8 +34,6 @@ class CronInstaller
       scheduled_task = ScheduledTask.new(params)
       scheduled_task.run!
 
-      puts "[INFO] -----------------------"
-
       entry_number += 1
     end
   end
@@ -42,18 +41,16 @@ class CronInstaller
   private
 
   def _capacity_provider_strategy
-    if !target_group_name.match?(/hnmi/)
-      raise "This is hard-coded only for hnmi. code needs to be updated to support other deployments"
-    end
+    raise 'This is hard-coded only for hnmi. code needs to be updated to support other deployments' unless target_group_name.match?(/hnmi/)
+
     [
       {
-        capacity_provider: target_group_name.match?(/production/) ? "hnmi-capacity-provider" : "hnmi-sandbox-capacity-provider"
+        capacity_provider: target_group_name.match?(/production/) ? 'hnmi-capacity-provider' : 'hnmi-sandbox-capacity-provider',
         weight: 1,
         base: 1,
       },
     ]
   end
-
 
   def target_group_name
     ENV.fetch('TARGET_GROUP_NAME')
@@ -83,7 +80,7 @@ class CronInstaller
       max_results: 1,
     ).task_definition_arns.first
 
-    raise "No task definition found" if task_definition.nil?
+    raise 'No task definition found' if task_definition.nil?
 
     puts "[INFO] Using #{task_definition}"
 
@@ -131,15 +128,15 @@ class CronInstaller
   end
 
   def get_command(line)
-    reg_match = line.match(%r{/bin/bash -l -c '(.+)'$})
+    reg_match = line.match(/\/bin\/bash -l -c '(.+)'$/)
 
-    raise "invalid cron line" if reg_match.nil?
+    raise 'invalid cron line' if reg_match.nil?
 
     command = reg_match[1]
 
     command = command.split(/&&/).last
 
-    raise "invalid cron line" if command.nil?
+    raise 'invalid cron line' if command.nil?
 
     command.sub!(/^\s*RAILS_ENV=\w+ /, '')
 
@@ -147,9 +144,6 @@ class CronInstaller
 
     command.split(' ')
   end
-
-  define_method(:iam) { Aws::IAM::Client.new }
-  define_method(:ecs) { Aws::ECS::Client.new }
 end
 
 CronInstaller.new.run!

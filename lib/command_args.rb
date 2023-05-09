@@ -1,11 +1,12 @@
 # frozen_string_literal: true
+
 require 'yaml'
 
 class CommandArgs
   attr_accessor :deployments
 
   def initialize
-    path = File.join(Deployer::ROOT_PATH, 'config', 'docker_assets', 'secret.deploy.values.yml')
+    path = Env.fetch('ECS_DEPLOY_SECRETS_FILE_PATH', './secret.deploy.values.yml') # Either symlink or pass the env var.
     config = YAML.load_file(path)
     defaults = config['_global_defaults'] || {}
     config.each_key do |key|
@@ -13,10 +14,8 @@ class CommandArgs
     end
 
     # Filter to this application (sometimes we share apps in a single secret.deploy.values.yml file)
-    app_file = File.join(Deployer::ROOT_PATH, '.ecs-app-key')
-    # Pathname.new(__FILE__).join('..', '..', '..', '..', '..', '.ecs-app-key')
-    app = File.read(app_file).chomp
-    config = config[app]
+    app_key = ENV.fetch('ECS_DEPLOY_APP_KEY', nil)
+    config = config[app] unless app_key.nil?
 
     raise "Set first param as group of environments to deploy/build: #{config.keys}" unless ARGV[0]
 
@@ -31,6 +30,10 @@ class CommandArgs
   end
 
   def self.cluster
-    ENV.fetch('AWS_CLUSTER') { ENV.fetch('AWS_PROFILE') { ENV.fetch('AWS_VAULT') } }
+    ENV.fetch('CLUSTER_NAME', '')
+  end
+
+  def cluster
+    CommandArgs.cluster
   end
 end
