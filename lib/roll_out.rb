@@ -164,7 +164,7 @@ class RollOut
 
     _register_task!(
       soft_mem_limit_mb: DEFAULT_SOFT_RAM_MB,
-      image: image_base + '--base',
+      image: image_base,
       name: name,
       command: ['bin/deploy_tasks.sh'],
     )
@@ -181,12 +181,11 @@ class RollOut
 
     _register_task!(
       soft_mem_limit_mb: DEFAULT_SOFT_DJ_RAM_MB.call(target_group_name),
-      image: image_base + '--base',
+      image: image_base,
       name: name,
       # command: ['echo', 'workerhere'],
     )
   end
-
 
   def web_soft_mem_limit_mb
     (web_options['soft_mem_limit_mb'] || DEFAULT_SOFT_WEB_RAM_MB).to_i
@@ -194,9 +193,9 @@ class RollOut
 
   def maybe_version_string(which)
     if versions.key?(which)
-      return "-#{versions[which]}"
+      "-#{versions[which]}"
     else
-      return ''
+      ''
     end
   end
 
@@ -211,14 +210,14 @@ class RollOut
 
     _register_task!(
       soft_mem_limit_mb: web_soft_mem_limit_mb,
-      image: image_base + '--web',
+      image: image_base,
       environment: environment,
       ports: [{
         "container_port" => 3000,
         "host_port" => 0,
-        "protocol" => "tcp"
+        "protocol" => "tcp",
       }],
-      name: name + maybe_version_string(:ecs_task_web)
+      name: name + maybe_version_string(:ecs_task_web),
     )
 
     return if self.only_check_ram
@@ -257,9 +256,10 @@ class RollOut
     _register_task!(
       soft_mem_limit_mb: soft_mem_limit_mb,
       cpu_shares: dj_options.key?('cpu_shares') ? dj_options['cpu_shares'] : DEFAULT_CPU_SHARES,
-      image: image_base + '--dj',
+      image: image_base,
       name: name,
-      environment: environment
+      environment: environment,
+      command: ["bundle", "exec", "rake", "jobs:work"],
     )
 
     return if self.only_check_ram
