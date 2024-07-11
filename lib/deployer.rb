@@ -70,7 +70,7 @@ class Deployer
     self.variant           = 'web'
     self.system_status_path = system_status_path
     self.versions          = versions
-    self.version           = `git rev-parse --short=9 HEAD`.chomp
+    self.version           = `git rev-parse --short=7 HEAD`.chomp
     self.capacity_provider = capacity_provider
 
     Dir.chdir(_root)
@@ -113,7 +113,7 @@ class Deployer
     self.assume_ci_build = false
     self.push_allowed = false
     self.force_build = true
-    _build_and_push_all!
+    wait_for_image!
   end
 
   private
@@ -123,13 +123,13 @@ class Deployer
     _set_revision!
     _check_that_you_pushed_to_remote!
     _docker_login!
-    _build_and_push_all!
+    wait_for_image!
     _check_secrets!
   end
 
   def roll_out
     @roll_out ||=
-      RollOut.new({
+      RollOut.new(
         dj_options: dj_options,
         image_base: _remote_tag_base,
         secrets_arn: secrets_arn,
@@ -142,7 +142,7 @@ class Deployer
         system_status_path: system_status_path,
         versions: versions,
         capacity_provider: capacity_provider,
-      })
+      )
   end
 
   def _ensure_clean_repo!
@@ -175,55 +175,20 @@ class Deployer
     _run(cmd, alt_msg: 'docker login')
   end
 
-  def _build_and_push_all!
-    if !_pre_cache_image_exists? || force_build
-      _build_and_push_image('pre-cache')
-    end
-    _build_and_push_image('base')
-    _build_and_push_image('web')
-    _build_and_push_image('dj')
-    #_build_and_push_image('cron')
-  end
-
-  def _build_and_push_image(variant)
-    self.variant = variant
-
-    unless File.exist?(_dockerfile_path)
-      puts "[WARN] Not building #{variant} since the dockerfile #{_dockerfile_path} doesn't exist"
-      return
-    end
-
+  def wait_for_image!
     _set_image_tag!
 
-    if assume_ci_build
-      while _revision_not_in_repo?
-        puts "[INFO] Build did not finish yet for #{image_tag}. Trying again in #{WAIT_TIME} minutes."
-        # puts "[DEBUG] These are the tags:"
-        # puts _image_tags_in_repo.join(', ')
+    while _revision_not_in_repo?
+      puts "[INFO] Build did not finish yet for #{image_tag}. Trying again in #{WAIT_TIME} minutes."
+      # puts "[DEBUG] These are the tags:"
+      # puts _image_tags_in_repo.join(', ')
 
-        sleep WAIT_TIME * 60
-      end
-    end
-
-    if _revision_not_in_repo? || force_build
-      _build!
-      _tag_the_image!
-      _push_image! if push_allowed
-    else
-      puts "[INFO] Not building or pushing image #{image_tag}. It's already in the repo."
-
-      if ENV['PULL_LATEST'] == 'true'
-        puts "Pulling just so we have it locally (it's not required)."
-        _run("docker image pull #{_remote_tag}")
-        _tag_the_image!(authority: 'them')
-      end
+      sleep WAIT_TIME * 60
     end
   end
 
   def _add_latest_tags!
     _add_latest_tag!('base')
-    _add_latest_tag!('web')
-    _add_latest_tag!('dj')
   end
 
   def _add_latest_tag!(variant)
@@ -240,7 +205,7 @@ class Deployer
       repository_name: repo_name,
       image_ids: [
         {image_tag: image_tag},
-        {image_tag: image_tag_latest}
+        {image_tag: image_tag_latest},
       ]
     }
     images = ecr.batch_get_image(getparams).images
@@ -296,15 +261,9 @@ class Deployer
   end
 
   def _set_image_tag!
-    if variant == 'pre-cache'
-      self.image_tag = "#{_ruby_version}-#{_pre_cache_version}--pre-cache"
-    elsif ENV['IMAGE_TAG']
-      self.image_tag = ENV['IMAGE_TAG'] + "--#{variant}"
-      self.image_tag_latest = "latest-" + ENV['IMAGE_TAG'] + "--#{variant}"
-    else
-      self.image_tag = "githash-#{version}--#{variant}"
-      self.image_tag_latest = "latest-#{target_group_name}--#{variant}"
-    end
+    branch_name = `git rev-parse --abbrev-ref HEAD`.chomp
+    self.image_tag = "branch-#{branch_name}-#{version}"
+    self.image_tag_latest = "latest-#{target_group_name}"
 
     # puts "Setting image tag to #{image_tag}"
   end
@@ -313,7 +272,7 @@ class Deployer
     _run(<<~CMD)
       docker build
         --file=#{_dockerfile_path}
-        --tag #{repo_name}:latest--#{self.variant}
+        --tag #{repo_name}:latest
         .
     CMD
   end
