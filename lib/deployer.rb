@@ -129,7 +129,7 @@ class Deployer
 
   def roll_out
     @roll_out ||=
-      RollOut.new({
+      RollOut.new(
         dj_options: dj_options,
         image_base: _remote_tag_base,
         secrets_arn: secrets_arn,
@@ -142,7 +142,7 @@ class Deployer
         system_status_path: system_status_path,
         versions: versions,
         capacity_provider: capacity_provider,
-      })
+      )
   end
 
   def _ensure_clean_repo!
