@@ -6,7 +6,7 @@ class CommandArgs
 
   def initialize
     path = File.join(Deployer::ROOT_PATH, 'config', 'docker_assets', 'secret.deploy.values.yml')
-    config = YAML.load_file(path)
+    config = YAML.load_file(path, aliases: true)
     defaults = config['_global_defaults'] || {}
     config.each_key do |key|
       config.delete(key) if key.match?(/^_/)
