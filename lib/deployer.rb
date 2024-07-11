@@ -70,7 +70,7 @@ class Deployer
     self.variant           = 'web'
     self.system_status_path = system_status_path
     self.versions          = versions
-    self.version           = `git rev-parse --short=9 HEAD`.chomp
+    self.version           = `git rev-parse --short=7 HEAD`.chomp
     self.capacity_provider = capacity_provider
 
     Dir.chdir(_root)
@@ -261,7 +261,8 @@ class Deployer
   end
 
   def _set_image_tag!
-    self.image_tag = "githash-#{version}"
+    branch_name = `git rev-parse --abbrev-ref HEAD`.chomp
+    self.image_tag = "branch-#{branch_name}-#{version}"
     self.image_tag_latest = "latest-#{target_group_name}"
 
     # puts "Setting image tag to #{image_tag}"
