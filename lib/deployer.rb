@@ -122,7 +122,6 @@ class Deployer
     # _ensure_clean_repo!
     _set_revision!
     _check_that_you_pushed_to_remote!
-    _docker_login!
     wait_for_image!
     _check_secrets!
   end
@@ -164,15 +163,6 @@ class Deployer
     if ! remote.start_with?(our_commit)
       raise "Push or pull your branch first!"
     end
-  end
-
-  def _docker_login!
-    resp = ecr.get_authorization_token
-    data = resp.to_h[:authorization_data].first
-    user, pass = Base64.decode64(data[:authorization_token]).split(/:/)
-    server = data[:proxy_endpoint]
-    cmd = "docker login -u #{user} -p #{pass} #{server}"
-    _run(cmd, alt_msg: 'docker login')
   end
 
   def wait_for_image!
@@ -252,72 +242,12 @@ class Deployer
     exit
   end
 
-  def _ruby_version
-    @_ruby_version ||= File.read('.ruby-version').chomp
-  end
-
-  def _pre_cache_version
-    @_pre_cache_version ||= File.read('.pre-cache-version').chomp
-  end
-
   def _set_image_tag!
     branch_name = `git rev-parse --abbrev-ref HEAD`.chomp
     self.image_tag = "branch-#{branch_name}-#{version}"
     self.image_tag_latest = "latest-#{target_group_name}"
 
     # puts "Setting image tag to #{image_tag}"
-  end
-
-  def _build!
-    _run(<<~CMD)
-      docker build
-        --file=#{_dockerfile_path}
-        --tag #{repo_name}:latest
-        .
-    CMD
-  end
-
-  def _tag_the_image!(authority: 'us')
-    if authority == 'us'
-      _run("docker image tag #{repo_name}:latest--#{self.variant} #{_remote_tag}")
-    elsif authority == 'them'
-      _run("docker image tag #{_remote_tag} #{repo_name}:latest--#{self.variant} ")
-    else
-      raise 'invalid authority'
-    end
-  end
-
-  # This is a crude thing, but hopefully will inspire something not crude
-  def _test_stack!
-    _run("tmux split-window -h")
-    _run("tmux send-keys :1 'cd config/deploy/docker/local-test'")
-
-    puts "Sleeping to let stack boot"
-    sleep 20
-
-    _run(<<~CMD)
-      curl -k -H 'Host: #{TEST_HOST}' https://localhost:#{TEST_PORT}
-    CMD
-  end
-
-  def debug?
-    ENV['DEBUG'] == 'true'
-  end
-
-  def _push_image!
-    if debug?
-      puts "Skipping pushing to remote"
-      return
-    end
-
-    _run("docker push #{_remote_tag}")
-    _run("docker push #{_remote_latest_tag}")
-  end
-
-  def _clean_up_old_local_images!
-    _run(<<~CMD)
-      docker image prune --force -a --filter 'label=app=#{repo_name}' --filter 'until=100h'
-    CMD
   end
 
   def _image_tags_in_repo
@@ -341,12 +271,6 @@ class Deployer
     end
   end
 
-  def _pre_cache_image_exists?
-    result = `docker image ls -f 'reference=#{repo_name}' | grep #{_ruby_version}-#{_pre_cache_version}--pre-cache`
-
-    !result.match?(/^\s*$/)
-  end
-
   def _remote_tag
     repo_url + ":" + image_tag
   end
@@ -368,10 +292,6 @@ class Deployer
     if $CHILD_STATUS.exitstatus != 0
       raise "Aborting deployment due to command error"
     end
-  end
-
-  def _dockerfile_path
-    "#{_assets_path}/Dockerfile.#{repo_name}.#{variant}"
   end
 
   def _assets_path
