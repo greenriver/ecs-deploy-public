@@ -87,7 +87,6 @@ class Deployer
     roll_out.run!
 
     _add_latest_tags!
-    _clean_up_old_local_images!
   end
 
   def run_migrations!
